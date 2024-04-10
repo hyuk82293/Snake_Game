@@ -1,0 +1,139 @@
+//Declare Global Variables
+let s;
+let scl = 40;
+let food;
+let playfield = 600;
+let gameover = false;
+let highscore = 0;
+
+// p5js Setup function - required
+function setup() {
+  createCanvas(playfield, 640);
+  s = new Snake();
+  frameRate(10);
+  pickLocation();
+  gameover = false;
+}
+
+// p5js Draw function - required
+function draw() {
+  if (gameover) {
+    fill(255, 0, 0);
+    textSize(32);
+    text("Game Over! Press 'R' to Restart", 50, height / 2);
+    return; // Stop the draw function here
+  }
+
+  background(51);
+  scoreboard();
+  if (s.eat(food)) {
+    pickLocation();
+  }
+  s.death();
+  if (!gameover) { // Only update and show the snake if the game is not over
+    s.update();
+    s.show();
+  }
+  fill(255, 0, 100);
+  rect(food.x, food.y, scl, scl);
+}
+
+// Pick a location for food to appear
+function pickLocation() {
+  let cols = floor(playfield / scl);
+  let rows = floor(playfield / scl);
+  food = createVector(floor(random(cols)), floor(random(rows)));
+  food.mult(scl);
+}
+
+// scoreboard
+function scoreboard() {
+  fill(0);
+  rect(0, 600, 600, 40);
+  fill(255);
+  textFont("Georgia");
+  textSize(18);
+  text("Score: ", 10, 625);
+  text("Highscore: ", 450, 625);
+  text(s.score, 70, 625);
+  text(highscore, 540, 625); // 전역 변수 highscore를 직접 참조
+}
+
+// CONTROLS function
+function keyPressed() {
+  if (keyCode === UP_ARROW && s.yspeed === 0) {
+    s.dir(0, -1);
+  } else if (keyCode === DOWN_ARROW && s.yspeed === 0) {
+    s.dir(0, 1);
+  } else if (keyCode === RIGHT_ARROW && s.xspeed === 0) {
+    s.dir(1, 0);
+  } else if (keyCode === LEFT_ARROW && s.xspeed === 0) {
+    s.dir(-1, 0);
+  } else if (keyCode === 82) { // 'R' key for restarting the game
+    setup(); // Reinitialize the game
+  }
+}
+
+// SNAKE OBJECT
+function Snake() {
+  this.x = 0;
+  this.y = 0;
+  this.xspeed = 1;
+  this.yspeed = 0;
+  this.total = 0;
+  this.tail = [];
+  this.score = 0; // 게임 시작 시 점수는 0에서 시작
+
+  this.dir = function(x, y) {
+    this.xspeed = x;
+    this.yspeed = y;
+  };
+
+  this.eat = function(pos) {
+    let d = dist(this.x, this.y, pos.x, pos.y);
+    if (d < 1) {
+      this.total++;
+      this.score++;
+      if (this.score > highscore) { // 전역 변수 highscore를 참조하여 업데이트
+        highscore = this.score;
+      }
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  this.death = function() {
+    for (let i = 0; i < this.tail.length; i++) {
+      let pos = this.tail[i];
+      let d = dist(this.x, this.y, pos.x, pos.y);
+      if (d < 1) {
+        gameover = true; // Set gameover to true
+        this.total = 0;
+        this.score = 1; // Reset score to 1 instead of 0 to avoid showing 0 on restart
+        this.tail = [];
+      }
+    }
+  };
+
+  this.update = function() {
+    if (this.total === this.tail.length) {
+      for (let i = 0; i < this.tail.length - 1; i++) {
+        this.tail[i] = this.tail[i + 1];
+      }
+    }
+    this.tail[this.total - 1] = createVector(this.x, this.y);
+    this.x = this.x + this.xspeed * scl;
+    this.y = this.y + this.yspeed * scl;
+        this.x = constrain(this.x, 0, playfield - scl);
+    this.y = constrain(this.y, 0, playfield - scl);
+  };
+
+  this.show = function() {
+    fill(255);
+    for (let i = 0; i < this.tail.length; i++) {
+      rect(this.tail[i].x, this.tail[i].y, scl, scl);
+    }
+    rect(this.x, this.y, scl, scl);
+  };
+}
