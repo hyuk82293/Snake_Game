@@ -1,0 +1,160 @@
+let s, scl = 40, f, pf = 600, go = false, hs = 0, ob = [], nob = 5;
+
+function setup() {
+  createCanvas(pf, 640);
+  s = new Snake();
+  frameRate(9);
+  pick();
+  resetOb();
+  go = false;
+}
+
+function resetOb() {
+  ob = [];
+  for (let i = 0; i < nob; i++) {
+    let o = createVector(floor(random(pf / scl)) * scl, floor(random(pf / scl)) * scl);
+    while (o.x === s.x && o.y === s.y) {
+      o = createVector(floor(random(pf / scl)) * scl, floor(random(pf / scl)) * scl);
+    }
+    ob.push(o);
+  }
+}
+
+function draw() {
+  if (go) {
+    fill(255, 0, 0);
+    textSize(32);
+    text("Game Over! Press 'R' to Restart", 50, height / 2);
+    return;
+  }
+
+  background(51);
+  scoreboard();
+  if (s.eat(f)) {
+    pick();
+  }
+  s.death();
+  if (!go) {
+    s.update();
+    s.show();
+  }
+  
+  fill(255, 255, 0);
+  for (let i = 0; i < ob.length; i++) {
+    rect(ob[i].x, ob[i].y, scl, scl);
+  }
+  fill(255, 0, 100);
+  rect(f.x, f.y, scl, scl);
+}
+
+function pick() {
+  let cols = floor(pf / scl), rows = floor(pf / scl), isOnObstacle = true;
+
+  while (isOnObstacle) {
+    f = createVector(floor(random(cols)) * scl, floor(random(rows)) * scl);
+    isOnObstacle = ob.some(o => o.x === f.x && o.y === f.y);
+  }
+}
+
+function scoreboard() {
+  fill(0);
+  rect(0, 600, 600, 40);
+  fill(255);
+  textFont("Georgia");
+  textSize(18);
+  text("Score: ", 10, 625);
+  text("Highscore: ", 450, 625);
+  text(s.score, 70, 625);
+  text(hs, 540, 625);
+}
+
+function keyPressed() {
+  if (keyCode === UP_ARROW && s.ys !== 1) {
+    s.dir(0, -1);
+  } else if (keyCode === DOWN_ARROW && s.ys !== -1) {
+    s.dir(0, 1);
+  } else if (keyCode === RIGHT_ARROW && s.xs !== -1) {
+    s.dir(1, 0);
+  } else if (keyCode === LEFT_ARROW && s.xs !== 1) {
+    s.dir(-1, 0);
+  } else if (keyCode === 82) {
+    setup();
+  }
+}
+
+function Snake() {
+  this.x = 0; this.y = 0; this.xs = 1; this.ys = 0; this.t = 0; this.l = []; this.score = 0;
+
+  this.dir = function(x, y) {
+    this.xs = x;
+    this.ys = y;
+  };
+
+  this.eat = function(p) {
+    let d = dist(this.x, this.y, p.x, p.y);
+    if (d < 1) {
+      this.t++;
+      this.score++;
+      if (this.score > hs) hs = this.score;
+      if (this.score % 5 === 0) addObstacle();
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  this.death = function() {
+    for (let i = 0; i < ob.length; i++) {
+      if (this.x === ob[i].x && this.y === ob[i].y) {
+        go = true;
+        this.t = 0;
+        this.score = 1;
+        this.l = [];
+      }
+    }
+    for (let i = 0; i < this.l.length; i++) {
+      let p = this.l[i], d = dist(this.x, this.y, p.x, p.y);
+      if (d < 1) {
+        go = true;
+        this.t = 0;
+        this.score = 1;
+        this.l = [];
+      }
+    }
+  };
+
+  this.update = function() {
+    if (this.t === this.l.length) {
+      for (let i = 0; i < this.l.length - 1; i++) {
+        this.l[i] = this.l[i + 1];
+      }
+    }
+    this.l[this.t - 1] = createVector(this.x, this.y);
+    this.x += this.xs * scl;
+    this.y += this.ys * scl;
+    this.x = constrain(this.x, 0, pf - scl);
+    this.y = constrain(this.y, 0, pf - scl);
+  };
+
+  this.show = function() {
+    fill(255);
+    for (let i = 0; i < this.l.length; i++) {
+      rect(this.l[i].x, this.l[i].y, scl, scl);
+    }
+    rect(this.x, this.y, scl, scl);
+  };
+}
+
+function addObstacle() {
+  let col = floor(random(pf / scl)), row = floor(random(pf / scl)), o = createVector(col * scl, row * scl);
+  while (o.x === s.x && o.y === s.y) {
+    o = createVector(floor(random(pf / scl)) * scl, floor(random(pf / scl)) * scl);
+  }
+  for (let i = 0; i < ob.length; i++) {
+    if (o.x === ob[i].x && o.y === ob[i].y) {
+      o = createVector(floor(random(pf / scl)) * scl, floor(random(pf / scl)) * scl);
+      i = -1;
+    }
+  }
+  ob.push(o);
+}
