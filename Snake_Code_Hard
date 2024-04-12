@@ -1,9 +1,20 @@
-let s, scl = 40, f, pf = 600, go = false, hs = 0, ob = [], nob = 5;
+let s;
+let scl = 40;
+let f;
+let pf = 600;
+let go = false;
+let hs = 0;
+let ob = [];
+let nob = 5;
+let eatenCount = 0; // 추가: 먹은 먹이의 수
+let speedUpText = ""; // 추가: Speed Up! 문구를 보여주기 위한 변수
+let speedUpTimer = 0; // 추가: Speed Up! 문구를 표시할 시간을 제어하는 변수
+let frameIncrement = 0; // 추가: frameRate 증가를 위한 카운터
 
 function setup() {
   createCanvas(pf, 640);
   s = new Snake();
-  frameRate(9);
+  frameRate(8); // 초깃값은 8
   pick();
   resetOb();
   go = false;
@@ -24,13 +35,21 @@ function draw() {
   if (go) {
     fill(255, 0, 0);
     textSize(32);
-    text("Game Over! Press 'R' to Restart", 50, height / 2);
+    textAlign(CENTER, CENTER);
+    text("Game Over! Press 'R' to Restart", width / 2, height / 2);
     return;
   }
 
   background(51);
   scoreboard();
   if (s.eat(f)) {
+    eatenCount++; // 추가: 먹은 먹이 수 증가
+    if (eatenCount % 7 === 0) { // 추가: 7개 먹을 때마다 frameRate 증가
+      frameIncrement++;
+      frameRate(8 + frameIncrement); // frameRate를 1씩 증가
+      speedUpText = "Speed Up!"; // 추가: 속도 증가 시 Speed Up! 표시
+      speedUpTimer = frameCount + 20; // 수정: Speed Up! 문구 더 빨리 사라지도록
+    }
     pick();
   }
   s.death();
@@ -45,6 +64,14 @@ function draw() {
   }
   fill(255, 0, 100);
   rect(f.x, f.y, scl, scl);
+  
+  // 추가: Speed Up! 문구 표시
+  if (frameCount < speedUpTimer) {
+    fill(255);
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    text(speedUpText, width / 2, height / 2);
+  }
 }
 
 function pick() {
@@ -62,11 +89,14 @@ function scoreboard() {
   fill(255);
   textFont("Georgia");
   textSize(18);
+  textAlign(LEFT); // 스코어를 왼쪽으로 정렬
   text("Score: ", 10, 625);
-  text("Highscore: ", 450, 625);
-  text(s.score, 70, 625);
-  text(hs, 540, 625);
+  textAlign(RIGHT); // 하이스코어를 오른쪽으로 정렬
+  text("Highscore: " + Math.max(s.score, hs), 590, 625); // 변경: X 좌표를 조정하여 겹치지 않도록 함
+  textAlign(LEFT); // 스코어를 다시 왼쪽으로 정렬
+  text(s.score, 80, 625);
 }
+
 
 function keyPressed() {
   if (keyCode === UP_ARROW && s.ys !== 1) {
@@ -78,6 +108,11 @@ function keyPressed() {
   } else if (keyCode === LEFT_ARROW && s.xs !== 1) {
     s.dir(-1, 0);
   } else if (keyCode === 82) {
+    // 추가: 재시작 시 먹은 먹이 수와 frameRate 증가를 초기화
+    eatenCount = 0;
+    frameIncrement = 0;
+    speedUpText = ""; // 추가: Speed Up! 문구 초기화
+    speedUpTimer = 0; // 추가: Speed Up! 타이머 초기화
     setup();
   }
 }
